@@ -24,7 +24,6 @@ class _FormBukuPageState extends State<FormBukuPage> {
   @override
   void initState() {
     super.initState();
-
     idC = TextEditingController(text: widget.buku?.idbuku ?? "");
     judulC = TextEditingController(text: widget.buku?.judul ?? "");
     pengarangC = TextEditingController(text: widget.buku?.pengarang ?? "");
@@ -47,7 +46,6 @@ class _FormBukuPageState extends State<FormBukuPage> {
 
     try {
       if (widget.buku == null) {
-        // ➕ TAMBAH BUKU
         await ApiService.tambahBuku(
           idC.text,
           judulC.text,
@@ -55,7 +53,6 @@ class _FormBukuPageState extends State<FormBukuPage> {
           penerbitC.text,
         );
       } else {
-        // ✏️ UPDATE BUKU
         await ApiService.updateBuku(
           widget.buku!.idbuku,
           judulC.text,
@@ -63,6 +60,17 @@ class _FormBukuPageState extends State<FormBukuPage> {
           penerbitC.text,
         );
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.buku == null
+                ? "Buku berhasil ditambahkan"
+                : "Buku berhasil diperbarui",
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
 
       Navigator.pop(context, true);
     } catch (e) {
@@ -82,75 +90,107 @@ class _FormBukuPageState extends State<FormBukuPage> {
     final isEdit = widget.buku != null;
 
     return Scaffold(
+      backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
         title: Text(isEdit ? "Edit Buku" : "Tambah Buku"),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // ID BUKU
-              TextFormField(
-                controller: idC,
-                enabled: !isEdit,
-                decoration: const InputDecoration(
-                  labelText: "ID Buku",
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? "ID buku wajib diisi" : null,
-              ),
-              const SizedBox(height: 15),
+      body: Center(
+        child: SingleChildScrollView(
+          child: Card(
+            elevation: 8,
+            margin: const EdgeInsets.symmetric(horizontal: 30),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isEdit ? Icons.edit : Icons.library_add,
+                      size: 60,
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(height: 15),
 
-              // JUDUL
-              TextFormField(
-                controller: judulC,
-                decoration: const InputDecoration(
-                  labelText: "Judul Buku",
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? "Judul wajib diisi" : null,
-              ),
-              const SizedBox(height: 15),
+                    // ID BUKU
+                    TextFormField(
+                      controller: idC,
+                      enabled: !isEdit,
+                      decoration: const InputDecoration(
+                        labelText: "ID Buku",
+                        prefixIcon: Icon(Icons.numbers),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value!.isEmpty ? "ID buku wajib diisi" : null,
+                    ),
+                    const SizedBox(height: 15),
 
-              // PENGARANG
-              TextFormField(
-                controller: pengarangC,
-                decoration: const InputDecoration(
-                  labelText: "Pengarang",
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? "Pengarang wajib diisi" : null,
-              ),
-              const SizedBox(height: 15),
+                    // JUDUL
+                    TextFormField(
+                      controller: judulC,
+                      decoration: const InputDecoration(
+                        labelText: "Judul Buku",
+                        prefixIcon: Icon(Icons.book),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value!.isEmpty ? "Judul wajib diisi" : null,
+                    ),
+                    const SizedBox(height: 15),
 
-              // PENERBIT
-              TextFormField(
-                controller: penerbitC,
-                decoration: const InputDecoration(
-                  labelText: "Penerbit",
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? "Penerbit wajib diisi" : null,
-              ),
-              const SizedBox(height: 25),
+                    // PENGARANG
+                    TextFormField(
+                      controller: pengarangC,
+                      decoration: const InputDecoration(
+                        labelText: "Pengarang",
+                        prefixIcon: Icon(Icons.person),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value!.isEmpty ? "Pengarang wajib diisi" : null,
+                    ),
+                    const SizedBox(height: 15),
 
-              // TOMBOL SIMPAN / UPDATE
-              ElevatedButton(
-                onPressed: isLoading ? null : simpanData,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                    // PENERBIT
+                    TextFormField(
+                      controller: penerbitC,
+                      decoration: const InputDecoration(
+                        labelText: "Penerbit",
+                        prefixIcon: Icon(Icons.business),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value!.isEmpty ? "Penerbit wajib diisi" : null,
+                    ),
+                    const SizedBox(height: 25),
+
+                    // BUTTON
+                    SizedBox(
+                      width: double.infinity,
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : simpanData,
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : Text(isEdit ? "UPDATE" : "SIMPAN"),
+                      ),
+                    ),
+                  ],
                 ),
-                child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(isEdit ? "Update" : "Simpan"),
               ),
-            ],
+            ),
           ),
         ),
       ),

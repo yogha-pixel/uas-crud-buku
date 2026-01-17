@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/buku.dart';
 import '../services/api_service.dart';
 import 'form_buku_page.dart';
+import 'login_page.dart';
 
 class BukuListPage extends StatefulWidget {
   const BukuListPage({super.key});
@@ -25,33 +26,71 @@ class _BukuListPageState extends State<BukuListPage> {
     });
   }
 
+  Future<void> logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text("Apakah Anda yakin ingin logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Logout"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ApiService.logout();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+
+      // ================= APP BAR =================
       appBar: AppBar(
-        title: const Text("Data Buku"),
+        title: const Text("📚 Daftar Buku"),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: "Refresh",
             onPressed: refreshData,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: "Logout",
+            onPressed: logout,
           ),
         ],
       ),
 
-      // ✅ SATU FloatingActionButton
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
+      // ================= TAMBAH BUKU =================
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.add),
+        label: const Text("Tambah Buku"),
         onPressed: () async {
           final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const FormBukuPage()),
           );
-          if (result == true) {
-            refreshData();
-          }
+          if (result == true) refreshData();
         },
       ),
 
+      // ================= LIST DATA =================
       body: FutureBuilder<List<Buku>>(
         future: futureBuku,
         builder: (context, snapshot) {
@@ -60,85 +99,127 @@ class _BukuListPageState extends State<BukuListPage> {
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text("Gagal mengambil data buku"));
+            return const Center(child: Text("❌ Gagal mengambil data buku"));
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Data buku kosong"));
+            return const Center(child: Text("📭 Data buku masih kosong"));
           }
 
           final bukuList = snapshot.data!;
 
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowColor: MaterialStateProperty.all(Colors.blue.shade100),
-              columns: const [
-                DataColumn(label: Text("ID Buku")),
-                DataColumn(label: Text("Judul")),
-                DataColumn(label: Text("Pengarang")),
-                DataColumn(label: Text("Penerbit")),
-                DataColumn(label: Text("Aksi")),
-              ],
-              rows: bukuList.map((buku) {
-                return DataRow(cells: [
-                  DataCell(Text(buku.idbuku)),
-                  DataCell(Text(buku.judul)),
-                  DataCell(Text(buku.pengarang)),
-                  DataCell(Text(buku.penerbit)),
-                  DataCell(Row(
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: bukuList.length,
+            itemBuilder: (context, index) {
+              final buku = bukuList[index];
+
+              return Card(
+                elevation: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ✏️ EDIT
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.orange),
-                        onPressed: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FormBukuPage(buku: buku),
-                            ),
-                          );
-                          if (result == true) {
-                            refreshData();
-                          }
-                        },
+                      // ================= JUDUL =================
+                      Text(
+                        buku.judul,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
 
-                      // 🗑 DELETE
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text("Hapus Buku"),
-                              content: const Text(
-                                  "Apakah Anda yakin ingin menghapus data ini?"),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(context, false),
-                                  child: const Text("Batal"),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: const Text("Hapus"),
-                                ),
-                              ],
-                            ),
-                          );
+                      const SizedBox(height: 8),
 
-                          if (confirm == true) {
-                            await ApiService.hapusBuku(buku.idbuku);
-                            refreshData();
-                          }
-                        },
+                      // ================= INFO =================
+                      Row(
+                        children: [
+                          const Icon(Icons.person, size: 16),
+                          const SizedBox(width: 6),
+                          Text(buku.pengarang),
+                        ],
                       ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.business, size: 16),
+                          const SizedBox(width: 6),
+                          Text(buku.penerbit),
+                        ],
+                      ),
+
+                      const Divider(height: 24),
+
+                      // ================= AKSI =================
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Chip(
+                            label: Text("ID: ${buku.idbuku}"),
+                            backgroundColor: Colors.blue.shade100,
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit,
+                                    color: Colors.orange),
+                                tooltip: "Edit",
+                                onPressed: () async {
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => FormBukuPage(buku: buku),
+                                    ),
+                                  );
+                                  if (result == true) refreshData();
+                                },
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                tooltip: "Hapus",
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: const Text("Hapus Buku"),
+                                      content: const Text(
+                                          "Yakin ingin menghapus buku ini?"),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
+                                          child: const Text("Batal"),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
+                                          child: const Text("Hapus"),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirm == true) {
+                                    await ApiService.hapusBuku(buku.idbuku);
+                                    refreshData();
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
                     ],
-                  )),
-                ]);
-              }).toList(),
-            ),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

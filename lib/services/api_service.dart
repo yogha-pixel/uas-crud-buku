@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/buku.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String baseUrl = "http://127.0.0.1:8000/api";
@@ -37,6 +38,12 @@ class ApiService {
       }),
     );
     return res.statusCode == 200;
+  }
+
+  // ================= LOGOUT =================
+  static Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // hapus token / session
   }
 
   // ================= BUKU =================
